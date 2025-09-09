@@ -5,12 +5,33 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
+// waitgroup
 func main() {
 	fmt.Println("Привет! Ты попал на викторину. Я буду отправлять тебе примеры, ты должен дать правильный ответ")
+	fmt.Println("У тебя есть 10 секунд для ответа на все вопросы")
 	records := read_from_csv("problems.csv")
-	verify_otvet(records)
+
+	timerCh := time.After(30 * time.Second) // канал для таймера
+	resultCh := make(chan string)           // канал для флага что вопросы закончились
+
+	go func() {
+		result := verify_otvet(records, timerCh)
+		resultCh <- result
+	}()
+
+	select {
+	case <-timerCh:
+		fmt.Printf("\nВремя вышло! ")
+
+	case result := <-resultCh:
+		fmt.Println(result)
+
+		fmt.Printf("Все вопросы пройдены!%s\n", result)
+	}
+
 }
 
 func read_from_csv(filename string) [][]string {
@@ -31,27 +52,26 @@ func read_from_csv(filename string) [][]string {
 	return records
 }
 
-func verify_otvet(records [][]string) {
-	var otvet int64
-	var succes_otvet int64
-	var failed_otvet int64
+func verify_otvet(records [][]string, timerCh <-chan time.Time) string {
+	succes_otvet := 0
+	failed_otvet := 0
+	otvet := 0
 	for i, record := range records {
-		fmt.Printf("Вопрос номер %d\n", i+1)
-		fmt.Printf("%s = ", record[0])
+		fmt.Printf("Вопрос номер %d: %s = ", i+1, record[0])
 		fmt.Scanf("%d", &otvet)
-		num, err := strconv.ParseInt(record[1], 10, 64)
+		res, err := strconv.Atoi(record[1])
 		if err != nil {
-			fmt.Println("ошибка: ", err)
 			panic(err)
 		}
-		if otvet == num {
-			println("Верно! Следующий вопрос")
+		if otvet == res {
 			succes_otvet++
+			fmt.Println("Верно! Следующий вопрос")
 		} else {
-			println("Неправильно! Следующий вопрос")
 			failed_otvet++
+			fmt.Println("Неверно! Следующий вопрос")
 		}
+
 	}
-	fmt.Printf("Количество верных ответов: %d\nКоличество неверных ответов: %d\nВсего вопросов: %d\n", succes_otvet, failed_otvet, len(records))
+	return fmt.Sprintf("\nРезультат: %d/%d правильных ответов\n", succes_otvet, len(records))
 
 }
