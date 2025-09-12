@@ -1,0 +1,14 @@
+[
+    {
+        "path": "/google",
+        "url": "https://google.com"
+    },
+    {
+        "path": "/github",
+        "url": "https://github.com"
+    },
+    {
+        "path": "/gophersis",
+        "url": "https://gophercises.com/"
+    }
+]

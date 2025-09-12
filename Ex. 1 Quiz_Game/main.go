@@ -14,11 +14,11 @@ func main() {
 	fmt.Println("У тебя есть 10 секунд для ответа на все вопросы")
 	records := read_from_csv("problems.csv")
 
-	timerCh := time.After(30 * time.Second) // канал для таймера
-	resultCh := make(chan string)           // канал для флага что вопросы закончились
+	timerCh := time.After(3 * time.Second) // канал для таймера
+	resultCh := make(chan string)          // канал для флага что вопросы закончились
 
 	go func() {
-		result := verify_otvet(records, timerCh)
+		result := verify_otvet(records)
 		resultCh <- result
 	}()
 
@@ -26,12 +26,10 @@ func main() {
 	case <-timerCh:
 		fmt.Printf("\nВремя вышло! ")
 
-	case result := <-resultCh:
-		fmt.Println(result)
-
-		fmt.Printf("Все вопросы пройдены!%s\n", result)
+	case result, ok := <-resultCh:
+		fmt.Printf("Все вопросы пройдены!%s, OK = %v\n", result, ok)
 	}
-
+	close(resultCh)
 }
 
 func read_from_csv(filename string) [][]string {
@@ -52,7 +50,7 @@ func read_from_csv(filename string) [][]string {
 	return records
 }
 
-func verify_otvet(records [][]string, timerCh <-chan time.Time) string {
+func verify_otvet(records [][]string) string {
 	succes_otvet := 0
 	failed_otvet := 0
 	otvet := 0
