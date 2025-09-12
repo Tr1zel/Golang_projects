@@ -91,6 +91,7 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		data.URL = r.FormValue("url")
 		writeNewDataJson("test.json", data)
+		http.Redirect(w, r, "/home", http.StatusFound)
 	}
 }
 
