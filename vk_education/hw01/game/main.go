@@ -13,26 +13,33 @@ import (
 код писать в этом файле
 наверняка у вас будут какие-то структуры с методами, глобальные переменные ( тут можно ), функции
 */
-var rooms = []string{"Комната", "Улица", "Кухня", "Коридор", "Домой"}
+
+const (
+	roomKitchen  = "кухня"
+	roomCorridor = "коридор"
+	roomRoom     = "комната"
+	roomStreet   = "улица"
+	roomHome     = "домой"
+)
 
 type Player struct {
-	cur_room  *Room
+	curRoom   *Room
 	inventory []string
 	bacpack   bool
 }
 
 type Room struct {
-	name            string
-	description     string
-	objects_in_room []string
-	availible_move  map[string]string
-	move_order      []string // порядок направлений
-	is_locked       bool
+	name          string
+	description   string
+	objectsInRoom []string
+	availibleMove map[string]string
+	moveOrder     []string // порядок направлений
+	isLocked      bool
 }
 
 type World struct {
-	all_rooms map[string]*Room
-	Player    *Player
+	allRooms map[string]*Room
+	Player   *Player
 }
 
 var gameWorld World
@@ -63,52 +70,52 @@ func main() {
 }
 
 func initGame() {
-	gameWorld.all_rooms = make(map[string]*Room)
+	gameWorld.allRooms = make(map[string]*Room)
 
 	kitchen := &Room{
-		name:            "Кухня",
-		description:     "ты находишься на кухне,",
-		objects_in_room: []string{"на столе: чай, надо собрать рюкзак и идти в универ."},
-		availible_move:  make(map[string]string),
-		is_locked:       false,
+		name:          "Кухня",
+		description:   "ты находишься на кухне,",
+		objectsInRoom: []string{"на столе: чай, надо собрать рюкзак и идти в универ."},
+		availibleMove: make(map[string]string),
+		isLocked:      false,
 	}
 	coridor := &Room{
-		name:            "Коридор",
-		description:     "ничего интересного.",
-		objects_in_room: []string{},
-		availible_move:  make(map[string]string),
-		is_locked:       false,
+		name:          "Коридор",
+		description:   "ничего интересного.",
+		objectsInRoom: []string{},
+		availibleMove: make(map[string]string),
+		isLocked:      false,
 	}
 	comnata := &Room{
-		name:            "Комната",
-		description:     "ты в своей комнате.",
-		objects_in_room: []string{"на столе: ключи, конспекты", "на стуле: рюкзак."},
-		availible_move:  make(map[string]string),
-		is_locked:       false,
+		name:          "Комната",
+		description:   "ты в своей комнате.",
+		objectsInRoom: []string{"на столе: ключи, конспекты", "на стуле: рюкзак."},
+		availibleMove: make(map[string]string),
+		isLocked:      false,
 	}
 	street := &Room{
-		name:            "Улица",
-		description:     "на улице весна.",
-		objects_in_room: []string{},
-		availible_move:  make(map[string]string),
-		is_locked:       true,
+		name:          "Улица",
+		description:   "на улице весна.",
+		objectsInRoom: []string{},
+		availibleMove: make(map[string]string),
+		isLocked:      true,
 	}
 
-	kitchen.availible_move["коридор"] = "коридор"
-	coridor.availible_move["улица"] = "улица"
-	coridor.availible_move["кухня"] = "кухня"
-	coridor.availible_move["комната"] = "комната"
-	coridor.move_order = []string{"кухня", "комната", "улица"}
-	comnata.availible_move["коридор"] = "коридор"
-	street.availible_move["домой"] = "коридор"
+	kitchen.availibleMove[roomCorridor] = roomCorridor
+	coridor.availibleMove[roomStreet] = roomStreet
+	coridor.availibleMove[roomKitchen] = roomKitchen
+	coridor.availibleMove[roomRoom] = roomRoom
+	coridor.moveOrder = []string{roomKitchen, roomRoom, roomStreet}
+	comnata.availibleMove[roomCorridor] = roomCorridor
+	street.availibleMove[roomHome] = roomCorridor
 
-	gameWorld.all_rooms["кухня"] = kitchen
-	gameWorld.all_rooms["коридор"] = coridor
-	gameWorld.all_rooms["комната"] = comnata
-	gameWorld.all_rooms["улица"] = street
+	gameWorld.allRooms[roomKitchen] = kitchen
+	gameWorld.allRooms[roomCorridor] = coridor
+	gameWorld.allRooms[roomRoom] = comnata
+	gameWorld.allRooms[roomStreet] = street
 
 	gamePlayer = Player{
-		cur_room:  gameWorld.all_rooms["кухня"],
+		curRoom:   gameWorld.allRooms[roomKitchen],
 		inventory: []string{},
 		bacpack:   false,
 	}
@@ -124,53 +131,52 @@ func handleCommand(command string) string {
 		и наверняка вызывает какой-то другой метод или функцию у "мира" - списка комнат
 	*/
 
-	split_command := strings.Split(command, " ")
-	if split_command[0] == "осмотреться" {
-		return view_around()
-	} else if split_command[0] == "идти" {
-		if value, exists := gamePlayer.cur_room.availible_move[split_command[1]]; exists {
-			if value == "улица" && gameWorld.all_rooms[value].is_locked {
-				return fmt.Sprintf("дверь закрыта")
-			} else {
-				gamePlayer.cur_room = gameWorld.all_rooms[value]
-				return go_to()
+	splitCommand := strings.Split(command, " ")
+	switch splitCommand[0] {
+	case "осмотреться":
+		return ViewAround()
+	case "идти":
+		if value, exists := gamePlayer.curRoom.availibleMove[splitCommand[1]]; exists {
+			if value == roomStreet && gameWorld.allRooms[value].isLocked {
+				return "дверь закрыта"
 			}
-		} else {
-			return fmt.Sprintf("нет пути в %s", split_command[1])
+			gamePlayer.curRoom = gameWorld.allRooms[value]
+			return GoTo()
 		}
-	} else if split_command[0] == "надеть" {
+		return fmt.Sprintf("нет пути в %s", splitCommand[1])
+	case "надеть":
 		if !gamePlayer.bacpack {
 			gamePlayer.bacpack = true
-			gamePlayer.cur_room.objects_in_room = slices.DeleteFunc(
-				gamePlayer.cur_room.objects_in_room,
+			gamePlayer.curRoom.objectsInRoom = slices.DeleteFunc(
+				gamePlayer.curRoom.objectsInRoom,
 				func(item string) bool {
-					return strings.Contains(item, split_command[1])
+					return strings.Contains(item, splitCommand[1])
 				},
 			)
-			return fmt.Sprintf("вы надели: %s", split_command[1])
+			return fmt.Sprintf("вы надели: %s", splitCommand[1])
 		}
 		return "уже надето"
-	} else if split_command[0] == "взять" {
+	case "взять":
 		if !gamePlayer.bacpack {
 			return "некуда класть"
 		}
 		found := false
-		for _, item := range gamePlayer.cur_room.objects_in_room {
-			if strings.Contains(item, split_command[1]) {
+		for _, item := range gamePlayer.curRoom.objectsInRoom {
+			if strings.Contains(item, splitCommand[1]) {
 				found = true
 				break
 			}
 		}
 		if found {
-			gamePlayer.inventory = append(gamePlayer.inventory, split_command[1])
+			gamePlayer.inventory = append(gamePlayer.inventory, splitCommand[1])
 			// Удаляем предмет из строки или всю строку если она станет пустой
 			newObjects := []string{}
-			for _, item := range gamePlayer.cur_room.objects_in_room {
-				if strings.Contains(item, split_command[1]) {
+			for _, item := range gamePlayer.curRoom.objectsInRoom {
+				if strings.Contains(item, splitCommand[1]) {
 					// Удаляем предмет из строки
-					updated := strings.ReplaceAll(item, split_command[1]+", ", "")
-					updated = strings.ReplaceAll(updated, ", "+split_command[1], "")
-					updated = strings.ReplaceAll(updated, split_command[1], "")
+					updated := strings.ReplaceAll(item, splitCommand[1]+", ", "")
+					updated = strings.ReplaceAll(updated, ", "+splitCommand[1], "")
+					updated = strings.ReplaceAll(updated, splitCommand[1], "")
 					updated = strings.TrimSpace(updated)
 					// Проверяем осталось ли что-то кроме "на столе:" или "на стуле:"
 					if strings.HasSuffix(updated, ":") || updated == "" || strings.HasSuffix(updated, ": ") {
@@ -182,40 +188,41 @@ func handleCommand(command string) string {
 					newObjects = append(newObjects, item)
 				}
 			}
-			gamePlayer.cur_room.objects_in_room = newObjects
-			return fmt.Sprintf("предмет добавлен в инвентарь: %s", split_command[1])
+			gamePlayer.curRoom.objectsInRoom = newObjects
+			return fmt.Sprintf("предмет добавлен в инвентарь: %s", splitCommand[1])
 		}
 		return "нет такого"
-	} else if split_command[0] == "применить" {
-		return apply(split_command[1], split_command[2])
-	} else {
+	case "применить":
+		return apply(splitCommand[1], splitCommand[2])
+	default:
 		return "неизвестная команда"
 	}
 }
-func view_around() string { // функция осмотреться
+func ViewAround() string { // функция осмотреться
 	var directions []string
-	if len(gamePlayer.cur_room.move_order) > 0 {
-		directions = gamePlayer.cur_room.move_order
+	if len(gamePlayer.curRoom.moveOrder) > 0 {
+		directions = gamePlayer.curRoom.moveOrder
 	} else {
 		directions = []string{}
-		for dir := range gamePlayer.cur_room.availible_move {
+		for dir := range gamePlayer.curRoom.availibleMove {
 			directions = append(directions, dir)
 		}
 		sort.Strings(directions)
 	}
 	directionsStr := strings.Join(directions, ", ")
 
-	objectsStr := strings.Join(gamePlayer.cur_room.objects_in_room, ", ")
+	objectsStr := strings.Join(gamePlayer.curRoom.objectsInRoom, ", ")
 
 	// Для кухни меняем текст если рюкзак уже надет
-	if gamePlayer.cur_room.name == "Кухня" {
+	switch {
+	case gamePlayer.curRoom.name == "Кухня":
 		if gamePlayer.bacpack {
 			objectsStr = strings.ReplaceAll(objectsStr, "надо собрать рюкзак и идти в универ.", "надо идти в универ.")
 		}
-		return fmt.Sprintf("%s %s можно пройти - %s", gamePlayer.cur_room.description, objectsStr, directionsStr)
-	} else if len(gamePlayer.cur_room.objects_in_room) == 0 {
+		return fmt.Sprintf("%s %s можно пройти - %s", gamePlayer.curRoom.description, objectsStr, directionsStr)
+	case len(gamePlayer.curRoom.objectsInRoom) == 0:
 		return fmt.Sprintf("пустая комната. можно пройти - %s", directionsStr)
-	} else {
+	default:
 		// Добавляем точку если её нет
 		if !strings.HasSuffix(objectsStr, ".") {
 			objectsStr += "."
@@ -224,23 +231,23 @@ func view_around() string { // функция осмотреться
 	}
 }
 
-func go_to() string { // функция идти
+func GoTo() string { // функция идти
 	var directions []string
-	if len(gamePlayer.cur_room.move_order) > 0 {
-		directions = gamePlayer.cur_room.move_order
+	if len(gamePlayer.curRoom.moveOrder) > 0 {
+		directions = gamePlayer.curRoom.moveOrder
 	} else {
 		directions = []string{}
-		for dir := range gamePlayer.cur_room.availible_move {
+		for dir := range gamePlayer.curRoom.availibleMove {
 			directions = append(directions, dir)
 		}
 		sort.Strings(directions)
 	}
 	directionsStr := strings.Join(directions, ", ")
 
-	if gamePlayer.cur_room.name == "Кухня" {
+	if gamePlayer.curRoom.name == "Кухня" {
 		return fmt.Sprintf("кухня, ничего интересного. можно пройти - %s", directionsStr)
 	}
-	return fmt.Sprintf("%s можно пройти - %s", gamePlayer.cur_room.description, directionsStr)
+	return fmt.Sprintf("%s можно пройти - %s", gamePlayer.curRoom.description, directionsStr)
 }
 
 func apply(object string, where string) string { // функция использовать
@@ -248,10 +255,9 @@ func apply(object string, where string) string { // функция исполь�
 		return fmt.Sprintf("нет предмета в инвентаре - %s", object)
 	}
 	if where == "дверь" {
-		gameWorld.all_rooms["улица"].is_locked = false
+		gameWorld.allRooms[roomStreet].isLocked = false
 		return "дверь открыта"
-	} else {
-		return "не к чему применить"
 	}
+	return "не к чему применить"
 
 }
