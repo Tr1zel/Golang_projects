@@ -18,7 +18,7 @@ var fileNames = make(map[string]string)
 func main() {
 	os.MkdirAll("./uploads", 0755)
 	http.HandleFunc("/", startHandler)
-	http.HandleFunc("/upload", UploadFile)
+	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/get/", downloadHandler)
 	fmt.Println("Start server on port 8080")
 	err := http.ListenAndServe(":8080", nil)
@@ -49,7 +49,7 @@ func generateShortID(length int) (string, error) {
 	return string(result), nil
 }
 
-func UploadFile(w http.ResponseWriter, r *http.Request) {
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Только POST запрос", http.StatusMethodNotAllowed)
 		return
